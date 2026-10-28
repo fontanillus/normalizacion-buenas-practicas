@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="UF2 · Modelo Entidad-Relación y Normalización: formas normales y buenas prácticas aplicadas a los cuatro ejercicios originales de la UF1.">
+    <meta name="theme-color" content="#f8fafc">
+    <title>Normalización · Cuaderno de bases de datos</title>
+    <!-- Tailwind Browser CDN es adecuado para este cuaderno sin proceso de compilación. -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --font-sans: "Segoe UI", system-ui, sans-serif;
+        }
+        @layer base {
+            html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+            body { @apply bg-slate-50 text-slate-700 antialiased; }
+            button, a { -webkit-tap-highlight-color: transparent; }
+            button { @apply cursor-pointer; }
+            :focus-visible { @apply outline-2 outline-offset-4 outline-indigo-600; }
+            ::selection { @apply bg-indigo-100 text-indigo-950; }
+        }
+        @layer components {
+            .nav-link { @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-950; }
+            .section-label { @apply text-xs font-bold uppercase tracking-[0.16em] text-slate-400; }
+            .panel { @apply rounded-2xl border border-slate-200 bg-white; }
+            .exercise-button { @apply flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-950/5 motion-reduce:transform-none; }
+            .exercise-button[aria-pressed="true"] { @apply border-indigo-500 ring-2 ring-indigo-500/15; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { transition-duration: 0s !important; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-lg bg-indigo-600 px-4 py-3 text-white focus:not-sr-only">Saltar al contenido</a>
+
+    <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+        <symbol id="icon-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/></symbol>
+        <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+        <symbol id="icon-layers" viewBox="0 0 24 24"><path d="m12 3 10 5-10 5L2 8l10-5Zm-10 9 10 5 10-5M2 16l10 5 10-5"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+        <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-14-2 18"/></symbol>
+        <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 5v16M3 3h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/></symbol>
+    </svg>
+
+    <div class="mx-auto min-h-screen max-w-[1600px] lg:grid lg:grid-cols-[248px_1fr]">
+        <aside class="border-b border-slate-200 bg-white px-5 py-5 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-b-0 lg:border-r lg:px-6 lg:py-8">
+            <a href="#inicio" class="flex w-fit items-center gap-3 text-slate-950" aria-label="Normaliza, inicio">
+                <span class="flex size-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
+                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#icon-database"/></svg>
+                </span>
+                <span class="text-lg font-bold tracking-tight">normaliza<span class="text-indigo-600">.</span></span>
+            </a>
+            <div class="mt-9 hidden lg:block">
+                <p class="section-label px-3">Espacio de trabajo</p>
+            </div>
+            <nav aria-label="Navegación principal" class="mt-5 flex flex-wrap gap-1 lg:mt-4 lg:flex-col">
+                <a href="#inicio" class="nav-link"><svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-grid"/></svg>Vista general</a>
+                <a href="#ejercicios" aria-controls="ejercicios" aria-expanded="false" class="nav-link"><svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-code"/></svg>Ejercicios<span class="ml-auto rounded bg-slate-100 px-1.5 text-xs text-slate-500">4</span></a>
+                <a href="#formas-normales" class="nav-link"><svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-layers"/></svg>Formas normales</a>
+                <a href="#buenas-practicas" class="nav-link"><svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-check"/></svg>Buenas prácticas</a>
+            </nav>
+            <div class="mt-auto hidden pt-10 lg:block">
+                <div class="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+                    <span class="text-xs font-bold text-indigo-600">DEL MODELO A LA REVISIÓN</span>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">Menos redundancia.<br>Más integridad.</p>
+                    <div class="mt-4 flex gap-1.5" aria-hidden="true"><span class="h-1 w-8 rounded-full bg-indigo-500"></span><span class="h-1 w-8 rounded-full bg-indigo-300"></span><span class="h-1 w-8 rounded-full bg-indigo-200"></span></div>
+                </div>
+                <p class="mt-5 px-1 text-xs text-slate-400">Bases de datos · UF2</p>
+            </div>
+        </aside>
+
+        <main id="contenido" class="min-w-0 px-5 pb-8 pt-6 sm:px-8 lg:px-10 lg:pt-8 xl:px-14">
+            <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-6 text-xs">
+                <p class="text-slate-400">Bases de datos <span class="mx-2" aria-hidden="true">/</span> <span class="font-medium text-slate-600">Normalización</span></p>
+                <span class="rounded-full border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-500">Cuaderno de aprendizaje</span>
+            </header>
+
+            <section id="inicio" aria-labelledby="titulo" class="relative mt-8 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-9">
+                <div class="pointer-events-none absolute -right-20 -top-32 size-96 rounded-full bg-indigo-500/15 blur-3xl" aria-hidden="true"></div>
+                <div class="relative">
+                    <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-300"><span class="size-1.5 rounded-full bg-indigo-400" aria-hidden="true"></span>UF2 · Modelo Entidad-Relación y Normalización</p>
+                    <h1 id="titulo" class="mt-5 max-w-xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl xl:text-[2.75rem]">Una buena base empieza<br class="hidden sm:block"> por un buen modelo.</h1>
+                    <p class="mt-4 max-w-lg text-sm leading-7 text-slate-300">Aplicamos las formas normales y las buenas prácticas a los cuatro ejercicios. Paso a paso, del modelo inicial a una estructura coherente.</p>
+                    <a href="#ejercicios" aria-controls="ejercicios" aria-expanded="false" class="mt-7 inline-flex items-center gap-3 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400">Explorar ejercicios<svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#icon-arrow"/></svg></a>
+                </div>
+                <div class="relative mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/10 pt-5 text-xs text-slate-300">
+                    <span>04 ejercicios</span><span>Un método: 1FN → 2FN → 3FN</span><span>Modelo relacional + revisión</span>
+                </div>
+            </section>
+
+            <noscript><p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Activa JavaScript para consultar el contenido actualizado y seleccionar los ejercicios.</p></noscript>
+            <section id="ejercicios" aria-labelledby="ejercicios-titulo" tabindex="-1" class="mt-10" hidden>
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div><p class="section-label">Tu cuaderno</p><h2 id="ejercicios-titulo" class="mt-2 text-xl font-bold tracking-tight text-slate-950">Los cuatro ejercicios</h2></div>
+                    <span id="exercise-progress" class="text-xs text-slate-500">0 de 4 completados</span>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-slate-500">Selecciona un ejercicio para consultar su espacio de trabajo.</p>
+                <div id="exercise-list" class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"></div>
+
+                <section id="exercise-detail" aria-labelledby="detail-title" class="panel mt-5 overflow-hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                        <h3 id="detail-title" class="text-sm font-semibold text-slate-950">Ejercicio 1 — Artículos y encargos</h3>
+                        <span class="flex items-center gap-2 text-xs text-slate-500"><span id="detail-status-dot" class="size-1.5 rounded-full bg-amber-400" aria-hidden="true"></span><span id="detail-status">Pendiente de revisión</span></span>
+                    </div>
+                    <div class="px-5 py-7 sm:px-6">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><use href="#icon-book"/></svg></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-slate-800">Enunciado y modelo original</h4>
+                                <a href="https://fontanillus.github.io/diagramas-er-transformacion/" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex items-center gap-2 rounded text-sm font-semibold text-indigo-600 underline decoration-indigo-300 underline-offset-4 transition hover:text-indigo-800">
+                                    Consultar ejercicios originales de UF1 en ER Lab
+                                    <svg class="size-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-arrow"/></svg>
+                                    <span class="sr-only"> (se abre en una pestaña nueva)</span>
+                                </a>
+                                <p class="mt-2 text-xs leading-5 text-slate-500">Página común con los cuatro ejercicios originales. Selecciona allí el ejercicio correspondiente.</p>
+                                <p class="mt-2 text-xs leading-5 text-slate-500">Consulta el modelo inicial en ER Lab y compáralo con el <span id="model-reference">modelo relacional corregido</span> que encontrarás al final de este ejercicio.</p>
+                            </div>
+                        </div>
+                        <div class="mt-7">
+                            <h4 class="text-sm font-semibold text-slate-800">Normalización</h4>
+                            <ul class="mt-3 grid gap-3 text-sm text-slate-500 md:grid-cols-3">
+                                <li class="rounded-xl bg-slate-50 p-4 leading-6"><span class="font-mono font-semibold text-indigo-600">1FN:</span> <span data-normal-form>pendiente de revisión.</span></li>
+                                <li class="rounded-xl bg-slate-50 p-4 leading-6"><span class="font-mono font-semibold text-teal-700">2FN:</span> <span data-normal-form>pendiente de revisión.</span></li>
+                                <li class="rounded-xl bg-slate-50 p-4 leading-6"><span class="font-mono font-semibold text-violet-700">3FN:</span> <span data-normal-form>pendiente de revisión.</span></li>
+                            </ul>
+                            <div id="normalization-conclusion" class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4" hidden>
+                                <h4 id="conclusion-title" class="text-sm font-semibold text-indigo-950">Conclusión</h4>
+                                <p id="conclusion-text" class="mt-2 text-sm leading-7 text-slate-600"></p>
+                            </div>
+                        </div>
+                        <div class="mt-6 border-t border-slate-100 pt-5">
+                            <h4 id="practices-title" class="text-sm font-semibold text-slate-800">Buenas prácticas aplicadas</h4>
+                            <p id="practices-pending" class="mt-2 text-sm leading-6 text-slate-500">Pendiente de revisión.</p>
+                            <ul id="exercise-practices" class="mt-4 grid gap-3 text-sm leading-6 text-slate-600 sm:grid-cols-2"></ul>
+                            <details id="design-disclosure" class="group mt-5 rounded-xl border border-slate-200" hidden>
+                                <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-xl bg-indigo-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-indigo-100 [&::-webkit-details-marker]:hidden">
+                                    <span>
+                                        <span class="block">Justificación de las decisiones de diseño</span>
+                                        <span class="mt-1 block text-xs font-normal text-slate-500">Panel desplegable · Pulsa para consultar los criterios y su justificación</span>
+                                    </span>
+                                    <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700">
+                                        <span class="group-open:hidden">Ver justificación</span>
+                                        <span class="hidden group-open:inline">Ocultar justificación</span>
+                                        <svg class="size-4 rotate-90 transition-transform group-open:-rotate-90" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-arrow"/></svg>
+                                    </span>
+                                </summary>
+                                <div id="exercise-design" class="space-y-4 border-t border-slate-200 p-4 text-sm leading-7 text-slate-600"></div>
+                            </details>
+                        </div>
+                        <details id="model-disclosure" class="group mt-6 rounded-xl border border-slate-200">
+                            <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-xl bg-indigo-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:bg-indigo-100 [&::-webkit-details-marker]:hidden">
+                                <span>
+                                    <span id="model-title" class="block">Modelo relacional corregido</span>
+                                    <span class="mt-1 block text-xs font-normal text-slate-500">Panel desplegable · Pulsa para mostrar u ocultar el modelo</span>
+                                </span>
+                                <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700">
+                                    <span class="group-open:hidden">Ver modelo</span>
+                                    <span class="hidden group-open:inline">Ocultar modelo</span>
+                                    <svg class="size-4 rotate-90 transition-transform group-open:-rotate-90" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-arrow"/></svg>
+                                </span>
+                            </summary>
+                            <div class="border-t border-slate-200 p-4">
+                                <p id="model-description" class="text-sm leading-6 text-slate-500">Se incorporará si hay cambios.</p>
+                                <div id="relational-model" class="mt-4 grid min-w-0 gap-4 xl:grid-cols-2"></div>
+                                <section id="model-notes" class="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4" hidden>
+                                    <h4 class="text-sm font-semibold text-indigo-950">Notas y restricciones del modelo</h4>
+                                    <ul id="model-notes-list" class="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600 marker:text-indigo-400"></ul>
+                                </section>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+                <p id="exercise-announcement" class="sr-only" role="status" aria-atomic="true"></p>
+            </section>
+
+            <section id="formas-normales" aria-labelledby="formas-titulo" class="mt-10">
+                <div class="flex flex-wrap items-end justify-between gap-3"><div><p class="section-label">La metodología</p><h2 id="formas-titulo" class="mt-2 text-xl font-bold tracking-tight text-slate-950">Cada forma normal, un paso adelante.</h2></div><span class="text-xs text-slate-400">Guía rápida</span></div>
+                <div class="mt-5 grid gap-4 md:grid-cols-3">
+                    <article class="panel p-5">
+                        <div class="flex items-center justify-between"><span class="rounded-lg bg-indigo-50 px-2.5 py-1.5 font-mono text-sm font-bold text-indigo-600">1FN</span><span class="text-xs text-slate-400">01 / Atomicidad</span></div>
+                        <h3 class="mt-5 text-base font-semibold text-slate-950">Un valor por atributo</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Valores atómicos según el dominio definido, sin listas ni grupos repetitivos. Identificamos las claves candidatas.</p>
+                        <p class="mt-5 border-t border-slate-100 pt-4 text-xs font-medium text-indigo-600">Sin celdas con múltiples valores.</p>
+                    </article>
+                    <article class="panel p-5">
+                        <div class="flex items-center justify-between"><span class="rounded-lg bg-teal-50 px-2.5 py-1.5 font-mono text-sm font-bold text-teal-700">2FN</span><span class="text-xs text-slate-400">02 / Dependencia completa</span></div>
+                        <h3 class="mt-5 text-base font-semibold text-slate-950">Toda la clave importa</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Partimos de 1FN. Cada atributo no primo debe depender de la totalidad de cada clave candidata, no solo de una parte.</p>
+                        <p class="mt-5 border-t border-slate-100 pt-4 text-xs font-medium text-teal-700">Sin dependencias parciales.</p>
+                    </article>
+                    <article class="panel p-5">
+                        <div class="flex items-center justify-between"><span class="rounded-lg bg-violet-50 px-2.5 py-1.5 font-mono text-sm font-bold text-violet-700">3FN</span><span class="text-xs text-slate-400">03 / Dependencia directa</span></div>
+                        <h3 class="mt-5 text-base font-semibold text-slate-950">Cada dato, en su lugar</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Partimos de 2FN y eliminamos dependencias transitivas de atributos no primos respecto de las claves candidatas.</p>
+                        <p class="mt-5 border-t border-slate-100 pt-4 text-xs font-medium text-violet-700">Menos redundancia y anomalías.</p>
+                    </article>
+                </div>
+                <p class="mt-3 text-xs leading-5 text-slate-400">Atributo primo: pertenece a alguna clave candidata. Al descomponer, comprobaremos la unión sin pérdida y la preservación de dependencias.</p>
+            </section>
+
+            <section id="buenas-practicas" aria-labelledby="practicas-titulo" class="panel mt-8 p-5 sm:p-6">
+                <div class="flex items-start gap-3"><span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600"><svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-check"/></svg></span><div><h2 id="practicas-titulo" class="text-base font-bold text-slate-950">No solo normalizar. Diseñar bien.</h2><p class="mt-1 text-sm text-slate-500">Criterios que revisaremos en cada solución.</p></div></div>
+                <ul class="mt-5 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+                    <li class="flex gap-2.5"><span class="font-semibold text-teal-600" aria-hidden="true">✓</span>Nombres claros y una convención consistente.</li>
+                    <li class="flex gap-2.5"><span class="font-semibold text-teal-600" aria-hidden="true">✓</span>Claves primarias y foráneas explícitas.</li>
+                    <li class="flex gap-2.5"><span class="font-semibold text-teal-600" aria-hidden="true">✓</span>Tipos de datos ajustados al dominio.</li>
+                    <li class="flex gap-2.5"><span class="font-semibold text-teal-600" aria-hidden="true">✓</span>Restricciones NOT NULL, UNIQUE y CHECK pertinentes.</li>
+                </ul>
+            </section>
+            <footer class="mt-9 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5 text-xs text-slate-400"><p>normaliza. <span class="mx-1">/</span> Bases de datos · UF2</p><p>Entender. Estructurar. Normalizar.</p></footer>
+        </main>
+    </div>
+
+    <template id="exercise-template">
+        <button type="button" class="exercise-button" aria-pressed="false" aria-controls="exercise-detail">
+            <span class="flex w-full items-center justify-between"><span data-number class="font-mono text-2xl font-medium tracking-tight text-slate-300"></span><svg class="size-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><use href="#icon-arrow"/></svg></span>
+            <span data-title class="mt-5 text-sm font-semibold text-slate-950"></span>
+            <span class="mt-1 text-xs leading-5 text-slate-500">Normalización y buenas prácticas</span>
+            <span class="mt-5 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500"><span data-status-dot class="size-1.5 rounded-full bg-amber-400" aria-hidden="true"></span><span data-status></span></span>
+        </button>
+    </template>
+    <template id="model-template">
+        <section class="min-w-0 overflow-hidden rounded-xl border border-slate-200">
+            <h5 data-table-title class="break-words bg-slate-50 px-4 py-3 font-mono text-sm font-semibold text-slate-800"></h5>
+            <pre tabindex="0" class="overflow-x-auto bg-slate-950 p-4 text-xs leading-6 text-slate-200 sm:text-sm"><code></code></pre>
+        </section>
+    </template>
+    <template id="sales-design-template">
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">1. Nomenclatura y coherencia del modelo relacional</h5>
+            <p class="mt-3">Se aplican las siguientes buenas prácticas de nomenclatura:</p>
+            <ul class="mt-3 list-disc space-y-1 pl-5 marker:text-teal-500">
+                <li>Nombres de tablas en plural y minúsculas.</li>
+                <li>Palabras compuestas separadas mediante guion bajo (<code>snake_case</code>).</li>
+                <li>Nombres de atributos descriptivos y coherentes.</li>
+                <li>Identificación clara de las claves primarias (PK) y foráneas (FK).</li>
+                <li>Diferenciación de atributos que pueden generar ambigüedad entre tablas.</li>
+            </ul>
+            <p class="mt-3">Se mantienen <code>cif_nif</code> como clave primaria de <code>clientes</code> y <code>proveedores</code>, respetando el enunciado original.</p>
+            <p class="mt-3">Para identificar correctamente las referencias, se utilizan nombres como <code>cif_nif_cliente</code> y <code>cif_nif_proveedor</code> en las tablas relacionadas.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">2. Tabla <code>telefonos</code>: utilización de una clave primaria simple</h5>
+            <p class="mt-3">Se mantiene <code>id_telefono</code> como clave primaria de la tabla <code>telefonos</code>, en lugar de utilizar la clave compuesta (<code>cif_nif_cliente</code>, <code>numero_telefono</code>) propuesta en la solución de referencia.</p>
+            <p class="mt-3">Esta decisión permite identificar cada registro telefónico de forma independiente, facilita su mantenimiento y conserva la relación uno a muchos (1:N) entre clientes y teléfonos.</p>
+            <p class="mt-3">La utilización de una clave primaria simple es una alternativa de diseño válida que no compromete la normalización del modelo.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">3. Tabla <code>facturas_lineas</code>: identificación de las líneas de factura</h5>
+            <p class="mt-3">Se mantiene la clave primaria compuesta (<code>numero_factura</code>, <code>numero_linea</code>) en lugar de (<code>numero_factura</code>, <code>id_producto</code>).</p>
+            <p class="mt-3">Esta decisión permite registrar un mismo producto en diferentes líneas de una factura cuando existen condiciones económicas distintas.</p>
+            <p class="mt-3">Por ejemplo, un cliente puede adquirir dos unidades de un producto a su precio habitual y recibir una tercera unidad sin cargo. En este caso, el producto aparece en dos líneas: una con su precio habitual y otra con precio cero.</p>
+            <p class="mt-3">La numeración de líneas permite identificar ambas operaciones sin generar conflictos en la clave primaria.</p>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">Como criterio funcional, se establece que la repetición de un producto en una factura debe estar justificada por diferencias de precio o condiciones de venta. Esta regla requiere validación adicional, ya que la clave primaria por sí sola no la garantiza.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">4. Conservación de los datos históricos de facturación</h5>
+            <p class="mt-3">Se mantienen los atributos <code>precio_venta</code>, <code>cantidad</code> e <code>importe_total_producto</code> en la tabla <code>facturas_lineas</code>, respetando el requisito explícito del enunciado.</p>
+            <p class="mt-3">El atributo <code>precio_venta</code> conserva el precio unitario aplicado en el momento de la operación, independientemente de futuras modificaciones del atributo <code>precio_actual</code> de la tabla <code>productos</code>.</p>
+            <p class="mt-3">Aunque <code>importe_total_producto</code> pueda calcularse, se almacena porque el enunciado exige conservarlo como parte del registro de la venta.</p>
+            <p class="mt-3">También se mantiene <code>importe_final</code> en <code>facturas</code>, conforme al requisito de registrar el importe definitivo con IVA.</p>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">Los importes almacenados deberán mantenerse coherentes mediante las validaciones correspondientes.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">5. Incorporación del IVA en las líneas de factura</h5>
+            <p class="mt-3">Se incorpora el atributo <code>iva</code> en la tabla <code>facturas_lineas</code>, siguiendo la solución de referencia del formador.</p>
+            <p class="mt-3">Esta decisión permite registrar el porcentaje de IVA aplicado a cada producto en el momento de la venta.</p>
+            <p class="mt-3">Además, contempla la posibilidad de que una misma factura contenga productos sujetos a diferentes tipos impositivos y permite conservar la información fiscal histórica.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">6. Criterio de cálculo de los importes y descuentos</h5>
+            <p class="mt-3">Se establecen los siguientes criterios:</p>
+            <ul class="mt-3 list-disc space-y-2 pl-5 marker:text-teal-500">
+                <li><code>precio_venta</code>: precio unitario sin IVA.</li>
+                <li><code>cantidad</code>: número de unidades vendidas.</li>
+                <li><code>importe_total_producto</code>: subtotal de la línea sin IVA, calculado multiplicando el precio unitario por la cantidad.</li>
+                <li><code>iva</code>: porcentaje impositivo aplicado a la línea.</li>
+                <li><code>descuento</code>: porcentaje de descuento general de la factura.</li>
+                <li><code>importe_final</code>: importe definitivo de la factura con el descuento y el IVA correspondientes.</li>
+            </ul>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">El descuento general se aplica sobre las bases imponibles antes de calcular los impuestos.</p>
+            <p class="mt-3">Este criterio permite diferenciar los importes antes y después del IVA, realizar el desglose económico de la factura y conservar los valores históricos de la operación.</p>
+        </section>
+        <section class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-5">
+            <h5 class="font-semibold text-indigo-950">Conclusión sobre las decisiones de diseño</h5>
+            <p class="mt-3">El modelo relacional mantiene los requisitos establecidos en el enunciado del ejercicio y aplica mejoras de nomenclatura, claridad e identificación de las relaciones.</p>
+            <p class="mt-3">Se justifican las decisiones de diseño que difieren de la solución de referencia, especialmente la identificación independiente de los teléfonos y la posibilidad de registrar un mismo producto en diferentes líneas de factura cuando existen condiciones económicas distintas.</p>
+            <p class="mt-3">Asimismo, se incorpora el IVA por línea y se establecen criterios claros para interpretar los importes y descuentos.</p>
+            <p class="mt-3">Estas decisiones buscan mejorar la coherencia, la trazabilidad y la utilidad del sistema de ventas sin modificar innecesariamente su estructura.</p>
+        </section>
+    </template>
+    <template id="roads-design-template">
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">1. Revisión del modelo y comprensión del enunciado</h5>
+            <p class="mt-3">Tras comparar el diagrama E/R original con la solución de referencia del formador, se identifican algunas diferencias derivadas de la interpretación inicial de los conceptos relacionados con la clasificación de las carreteras.</p>
+            <p class="mt-3">Esta revisión pone de manifiesto la importancia de comprender las reglas del ámbito de aplicación antes de elaborar el modelo conceptual.</p>
+            <p class="mt-3">Se decide rectificar aquellos elementos que pueden representarse de forma más precisa y mantener las decisiones propias que responden adecuadamente a los requisitos del enunciado.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">2. Rectificación de <code>CATEGORIA</code> y creación de <code>TIPO_VIA</code></h5>
+            <p class="mt-3">En el diseño inicial se interpretó el término «categoría» como la clasificación de las carreteras en autopistas, autovías, vías multicarril y carreteras convencionales.</p>
+            <p class="mt-3">Sin embargo, estos valores corresponden específicamente al concepto de tipo de vía.</p>
+            <p class="mt-3">Por ello, se sustituye <code>CATEGORIA</code> por <code>TIPO_VIA</code> y se elimina el atributo <code>TipoVia</code> de <code>CARRETERA</code>, evitando representar dos veces la misma información.</p>
+            <p class="mt-3">Se establece una relación 1:N: un tipo de vía puede corresponder a varias carreteras, mientras que cada carretera pertenece a un único tipo de vía.</p>
+            <p class="mt-3">Esta rectificación mejora la precisión terminológica y evita redundancias.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">3. Creación de la entidad <code>TITULARIDAD</code></h5>
+            <p class="mt-3">En el modelo original, la titularidad se representaba como un atributo de <code>CARRETERA</code>.</p>
+            <p class="mt-3">Se decide crear una entidad independiente <code>TITULARIDAD</code> para almacenar los valores estatal, autonómica, provincial y municipal.</p>
+            <p class="mt-3">La relación con <code>CARRETERA</code> es 1:N, puesto que una titularidad puede corresponder a varias carreteras y cada carretera tiene una única titularidad.</p>
+            <p class="mt-3">Esta modificación centraliza los valores permitidos, mejora la integridad referencial y facilita el mantenimiento de los datos.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">4. Creación de la entidad <code>NIVEL</code> y ubicación del atributo <code>color</code></h5>
+            <p class="mt-3">Inicialmente, el nivel se representaba como un atributo de <code>CARRETERA</code>.</p>
+            <p class="mt-3">Se decide crear una entidad independiente <code>NIVEL</code> para gestionar los valores 1, 2 y 3.</p>
+            <p class="mt-3">La relación es 1:N, pero la participación de una carretera es opcional, ya que las carreteras estatales no tienen nivel.</p>
+            <p class="mt-3">Además, se mantienen las restricciones establecidas en el enunciado:</p>
+            <ul class="mt-3 list-disc space-y-1 pl-5 marker:text-teal-500">
+                <li>Nivel 1: únicamente titularidad autonómica y color naranja.</li>
+                <li>Nivel 2: titularidad autonómica o provincial y color verde.</li>
+                <li>Nivel 3: titularidad autonómica, provincial o municipal y color amarillo.</li>
+                <li>Titularidad estatal: sin nivel.</li>
+            </ul>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">Estas reglas deberán validarse para impedir combinaciones incompatibles.</p>
+            <p class="mt-3">El atributo <code>color</code> se traslada de <code>CARRETERA</code> a <code>NIVEL</code> porque, según el enunciado, el color depende del nivel y no de cada carretera concreta.</p>
+            <p class="mt-3">Si se mantuviera en <code>carreteras</code>, se produciría una dependencia transitiva (<code>codigo</code> → <code>id_nivel</code> → <code>color</code>) y el mismo color se repetiría en todas las carreteras de un nivel, con riesgo de inconsistencias. Al ubicarlo en <code>niveles</code>, cada color se registra una sola vez y se obtiene mediante la clave foránea <code>id_nivel</code>.</p>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">Se deja constancia de que el enunciado no especifica el color de las carreteras estatales. Como estas carreteras no tienen nivel (<code>id_nivel</code> en <code>NULL</code>), el modelo no les asigna ningún color.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">5. Creación de la entidad <code>TIPO_TERRENO</code></h5>
+            <p class="mt-3">En el diseño inicial, el tipo de terreno aparecía como un atributo de <code>TRAMO</code>.</p>
+            <p class="mt-3">Se decide crear la entidad independiente <code>TIPO_TERRENO</code>, con los valores plano, cuesta subida y cuesta bajada.</p>
+            <p class="mt-3">Se establece una relación 1:N: un tipo de terreno puede corresponder a varios tramos, mientras que cada tramo tiene un único tipo de terreno.</p>
+            <p class="mt-3">Esta decisión permite centralizar los valores de referencia y evitar inconsistencias en su registro.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">6. Creación de la entidad <code>ENTORNO</code></h5>
+            <p class="mt-3">Siguiendo el mismo criterio, se sustituye el atributo <code>Entorno</code> de <code>TRAMO</code> por una entidad independiente <code>ENTORNO</code>.</p>
+            <p class="mt-3">Esta entidad recoge los valores urbano, travesía y extraurbano.</p>
+            <p class="mt-3">La relación con <code>TRAMO</code> es 1:N, porque un entorno puede corresponder a muchos tramos, pero cada tramo tiene un único entorno según el modelo del ejercicio.</p>
+            <p class="mt-3">La modificación mejora la coherencia del diseño y facilita el control de los valores permitidos.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">7. Decisión mantenida: entidad <code>TRAYECTO</code></h5>
+            <p class="mt-3">Se mantiene la entidad <code>TRAYECTO</code> del modelo original porque responde a un requisito explícito del enunciado: un tramo puede atravesar varias provincias.</p>
+            <p class="mt-3">Esta entidad permite registrar los intervalos kilométricos correspondientes a cada provincia atravesada.</p>
+            <p class="mt-3">Se conserva la clave primaria compuesta (<code>id_tramo</code>, <code>id_paso</code>).</p>
+            <p class="mt-3">El atributo <code>id_paso</code> permite identificar cada intervalo de forma independiente, incluso cuando un mismo tramo atraviesa una provincia más de una vez.</p>
+            <p class="mt-3">No se utiliza (<code>id_tramo</code>, <code>id_provincia</code>) como clave primaria porque impediría registrar varias apariciones de una misma provincia dentro del mismo tramo.</p>
+            <p class="mt-3">Se considera una decisión de diseño propia, válida y justificada, que se mantiene aunque difiera de la solución de referencia.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">8. Decisión mantenida: entidad <code>EXTREMO_CARRETERA</code></h5>
+            <p class="mt-3">Se mantiene la entidad <code>EXTREMO_CARRETERA</code> porque permite representar dos situaciones contempladas en el enunciado:</p>
+            <ul class="mt-3 list-disc space-y-1 pl-5 marker:text-teal-500">
+                <li>Una carretera termina físicamente.</li>
+                <li>Una carretera confluye con otra.</li>
+            </ul>
+            <p class="mt-3">El atributo <code>tipo_extremo</code> permite distinguir ambas situaciones y <code>posicion</code> identifica si se trata del inicio o del final de la carretera.</p>
+            <p class="mt-3">Cuando existe una confluencia, se registran los datos necesarios para localizarla: tramo, kilómetro y provincia de la carretera de destino.</p>
+            <p class="mt-3">Cuando el extremo es físico, los atributos correspondientes a la confluencia deben quedar en <code>NULL</code>.</p>
+            <p class="mt-3">Se mantiene esta estructura porque permite representar ambos tipos de extremo, mientras que una entidad dedicada exclusivamente a las confluencias no recogería por sí sola los finales físicos.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">9. Separación de <code>PROVINCIA</code> y <code>COMUNIDAD_AUTONOMA</code></h5>
+            <p class="mt-3">Durante la transformación del diagrama E/R al modelo relacional se decidió separar las provincias y las comunidades autónomas en entidades independientes.</p>
+            <p class="mt-3">Se mantiene esta decisión porque existe una relación 1:N: una comunidad autónoma puede contener varias provincias y cada provincia pertenece a una única comunidad autónoma.</p>
+            <p class="mt-3">La clave foránea de <code>PROVINCIA</code> permite obtener su comunidad autónoma sin repetir esta información en <code>TRAYECTO</code> o <code>TRAMO</code>.</p>
+            <p class="mt-3">Esta separación reduce la redundancia y favorece la integridad referencial.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">10. Relación entre <code>CARRETERA</code> y <code>TRAMO</code></h5>
+            <p class="mt-3">Se mantiene la relación 1:N entre <code>CARRETERA</code> y <code>TRAMO</code>.</p>
+            <p class="mt-3">Una carretera se divide en varios tramos, pero cada tramo pertenece a una única carretera y no puede cambiar de carretera, según establece el enunciado.</p>
+            <p class="mt-3">El atributo <code>id_tramo</code> se conserva como clave primaria simple y autogenerada.</p>
+            <p class="mt-3">El atributo <code>codigo_carretera</code> actúa como clave foránea para identificar la carretera a la que pertenece cada tramo.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">11. Corrección de la entidad <code>extremos_carretera</code></h5>
+            <p class="mt-3">Se elimina el atributo <code>codigo_carretera</code>, porque la carretera correspondiente puede identificarse mediante la clave foránea <code>id_tramo</code>, que referencia a <code>tramos</code>.</p>
+            <p class="mt-3">Esta modificación evita almacenar información redundante y elimina una dependencia transitiva.</p>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">La restricción que impide registrar más de un inicio o un final para una misma carretera deberá garantizarse mediante una validación adicional.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">12. Validación de las confluencias</h5>
+            <p class="mt-3">Cuando un extremo representa una confluencia, deben existir los datos que identifican el punto de encuentro con otra carretera.</p>
+            <p class="mt-3">Se debe comprobar que el tramo de confluencia pertenece a una carretera distinta de la carretera cuyo extremo se registra.</p>
+            <p class="mt-3">Asimismo, el kilómetro y la provincia de confluencia deben corresponder a la ubicación real dentro del tramo indicado.</p>
+            <p class="mt-3">Estas comprobaciones son reglas de integridad adicionales que deben contemplarse al implementar la base de datos.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">13. Cálculo automático de la longitud</h5>
+            <p class="mt-3">Se decide no introducir manualmente la longitud de cada tramo.</p>
+            <p class="mt-3">La longitud se obtiene mediante la expresión:</p>
+            <pre tabindex="0" aria-label="Cálculo de la longitud del tramo" class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-xs leading-6 text-slate-200 sm:text-sm"><code>longitud = km_final - km_inicial</code></pre>
+            <p class="mt-3">Este valor puede implementarse como un atributo calculado o una columna generada en la base de datos.</p>
+            <p class="mt-3">La decisión evita inconsistencias entre los kilómetros inicial y final y la longitud registrada.</p>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">También debe validarse que el kilómetro final sea mayor que el inicial.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">14. Provincias de inicio, fin y recorrido</h5>
+            <p class="mt-3">Se mantienen <code>id_provincia_inicio</code> e <code>id_provincia_fin</code> en <code>TRAMO</code> para identificar directamente las provincias donde comienza y termina.</p>
+            <p class="mt-3">La entidad <code>TRAYECTO</code> conserva el recorrido provincial completo, incluidas las provincias intermedias.</p>
+            <p class="mt-3">Aunque las provincias inicial y final también pueden obtenerse de los intervalos de <code>TRAYECTO</code>, se mantienen por su utilidad para las consultas y por la información solicitada en el enunciado.</p>
+            <p class="mt-3">Obtenerlas desde <code>TRAYECTO</code> exigiría localizar el intervalo con el menor <code>km_inicio</code> y el de mayor <code>km_fin</code> de cada tramo, lo que complica las consultas habituales. Conservarlas en <code>TRAMO</code> permite acceder a ellas de forma directa.</p>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">Esta decisión introduce una redundancia controlada y exige validar su coherencia: <code>id_provincia_inicio</code> debe coincidir con la provincia del intervalo de <code>TRAYECTO</code> que comienza en <code>km_inicial</code>, e <code>id_provincia_fin</code> con la del intervalo que termina en <code>km_final</code>. Cualquier modificación del recorrido debe mantener ambos datos sincronizados.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">15. Validación de los intervalos kilométricos</h5>
+            <p class="mt-3">Los intervalos registrados en <code>TRAYECTO</code> deben encontrarse dentro de los límites kilométricos del tramo al que pertenecen.</p>
+            <p class="mt-3">Además, deben cubrir el recorrido completo sin dejar huecos ni producir solapamientos.</p>
+            <p class="mt-3">Por ejemplo, si un tramo comprende los kilómetros 10 a 50, ningún intervalo provincial de ese tramo puede extenderse hasta el kilómetro 60.</p>
+            <p class="mt-3">Estas restricciones garantizan la coherencia geográfica del recorrido.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">16. Buenas prácticas de nomenclatura</h5>
+            <p class="mt-3">En el modelo relacional corregido se aplican las siguientes convenciones:</p>
+            <ul class="mt-3 list-disc space-y-1 pl-5 marker:text-teal-500">
+                <li>Nombres de tablas en plural y minúsculas.</li>
+                <li>Nombres compuestos mediante <code>snake_case</code>.</li>
+                <li>Claves primarias y foráneas identificadas.</li>
+                <li>Nombres de atributos claros y descriptivos.</li>
+                <li>Referencias entre tablas expresadas de forma explícita.</li>
+                <li>Restricciones de unicidad e integridad documentadas.</li>
+            </ul>
+            <p class="mt-3">Estas convenciones facilitan la lectura, el mantenimiento y la comprensión del modelo.</p>
+        </section>
+        <section class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-5">
+            <h5 class="font-semibold text-indigo-950">Conclusión sobre las decisiones de diseño</h5>
+            <p class="mt-3">La revisión del ejercicio 3 ha permitido diferenciar las rectificaciones necesarias de las decisiones originales que se consideran justificadas.</p>
+            <p class="mt-3">Se rectifica la interpretación inicial de las categorías y se incorporan entidades independientes para los tipos de vía, titularidades, niveles, tipos de terreno y entornos, siguiendo un criterio coherente de organización de los datos.</p>
+            <p class="mt-3">Se mantienen las entidades <code>TRAYECTO</code> y <code>EXTREMO_CARRETERA</code> porque permiten representar requisitos específicos del enunciado que se desean conservar en la solución propia.</p>
+            <p class="mt-3">También se mantienen las decisiones relativas a la identificación de tramos, la separación territorial y el cálculo automático de la longitud.</p>
+            <p class="mt-3">La comparación con la solución de referencia ha servido para detectar mejoras, comprender mejor las reglas del sistema de carreteras y justificar las decisiones de diseño sin sustituir automáticamente el modelo original.</p>
+            <p class="mt-3">El resultado es una propuesta revisada que deberá reflejarse en el diagrama E/R y en el modelo relacional actualizado, con sus correspondientes restricciones de integridad.</p>
+        </section>
+    </template>
+    <template id="flights-design-template">
+        <section class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">Pendiente de revisión</h5>
+            <p class="mt-3 text-slate-500">Las justificaciones de las decisiones de diseño se incorporarán cuando se verifique el modelo con la solución de referencia del formador.</p>
+        </section>
+    </template>
+    <script>
+        const exercises = [
+            'Artículos y encargos',
+            'Ventas',
+            'Carreteras',
+            'Vuelos (aeropuertos, programas de vuelo, etc.)',
+        ].map((title, index) => ({
+            number: index + 1,
+            title,
+            status: 'Pendiente de revisión',
+        }));
+        Object.assign(exercises[0], {
+            status: 'Completado',
+            normalForms: [
+                'Todas las tablas cumplen la Primera Forma Normal, ya que sus atributos contienen valores atómicos y no existen grupos repetitivos.',
+                'Todas las tablas cumplen la Segunda Forma Normal, ya que cumplen la 1FN y no presentan dependencias parciales respecto a sus claves primarias.',
+                'Todas las tablas cumplen la Tercera Forma Normal, ya que cumplen la 2FN y no presentan dependencias transitivas.',
+            ],
+            conclusion: 'Las ocho tablas cumplen las tres formas normales analizadas. No se requieren cambios estructurales por motivos de normalización. Se han aplicado mejoras de nomenclatura y buenas prácticas, reflejadas en el modelo relacional corregido.',
+            practices: [
+                'Nombres de tablas en plural.',
+                'Todos los identificadores en minúsculas.',
+                'Palabras compuestas separadas por guion bajo.',
+                'Nombres de atributos coherentes entre tablas.',
+                'Conservación de las claves primarias simples y compuestas.',
+                'Conservación de las referencias entre tablas.',
+                'Sin añadir atributos redundantes ni datos calculados.',
+            ],
+            tables: [
+                { name: 'clientes', code: `clientes (
+    numero_cliente PK,
+    saldo,
+    limite_credito,
+    descuento,
+    telefono
+)` },
+                { name: 'direcciones_envio', code: `direcciones_envio (
+    id_direccion PK,
+    calle,
+    numero,
+    codigo_postal,
+    ciudad,
+    numero_cliente
+)
+
+donde
+{numero_cliente} referencia clientes
+
+UNIQUE (numero_cliente, id_direccion)` },
+                { name: 'pedidos', code: `pedidos (
+    numero_pedido PK,
+    fecha_hora_pedido,
+    numero_cliente,
+    id_direccion
+)
+
+donde
+{numero_cliente + id_direccion}
+    referencia direcciones_envio` },
+                { name: 'lineas_pedido', code: `lineas_pedido (
+    numero_pedido + numero_linea PK,
+    numero_articulo,
+    cantidad,
+    precio_unitario
+)
+
+donde
+{numero_pedido} referencia pedidos
+{numero_articulo} referencia articulos` },
+                { name: 'articulos', code: `articulos (
+    numero_articulo PK,
+    descripcion
+)` },
+                { name: 'fabricas', code: `fabricas (
+    numero_fabrica PK,
+    telefono_contacto
+)` },
+                { name: 'fabricas_articulos', code: `fabricas_articulos (
+    numero_fabrica + numero_articulo PK,
+    existencias
+)
+
+donde
+{numero_fabrica} referencia fabricas
+{numero_articulo} referencia articulos` },
+                { name: 'fabricas_alternativas', code: `fabricas_alternativas (
+    numero_fabrica + numero_fabrica_alternativa PK
+)
+
+donde
+{numero_fabrica} referencia fabricas
+{numero_fabrica_alternativa} referencia fabricas` },
+            ],
+        });
+        Object.assign(exercises[1], {
+            status: 'Completado',
+            practicesTemplate: 'sales-design-template',
+            practices: [
+                'Tablas en plural.',
+                'Todos los identificadores en minúsculas.',
+                'Palabras compuestas separadas por guion bajo (snake_case).',
+                'Claves primarias (PK) y foráneas (FK) identificadas.',
+                'Referencias explícitas a las tablas y atributos relacionados.',
+            ],
+            normalForms: [
+                'Todas las tablas cumplen la Primera Forma Normal porque sus atributos son atómicos y no presentan grupos repetidos.',
+                'Todas las tablas cumplen la Segunda Forma Normal porque cumplen la 1FN y no presentan dependencias parciales de atributos no primos respecto a sus claves candidatas.',
+                'Todas las tablas cumplen la Tercera Forma Normal porque cumplen la 2FN y no se han identificado dependencias transitivas de atributos no primos respecto a sus claves candidatas.',
+            ],
+            conclusion: 'Según la revisión realizada, las siete tablas del sistema de ventas cumplen las tres formas normales analizadas: 1FN, 2FN y 3FN. La revisión de normalización del ejercicio 2 queda completada. Las mejoras de nomenclatura y las decisiones de diseño se documentan y justifican en el apartado siguiente.',
+            tables: [
+                { name: 'proveedores', code: `proveedores (
+    cif_nif PK,
+    nombre,
+    calle,
+    numero,
+    ciudad,
+    codigo_postal,
+    telefono,
+    pagina_web
+)` },
+                { name: 'productos', code: `productos (
+    id_producto PK,
+    nombre,
+    precio_actual,
+    stock,
+    cif_nif_proveedor,
+    id_categoria
+)
+
+donde
+{cif_nif_proveedor} referencia proveedores(cif_nif)
+{id_categoria} referencia categorias(id_categoria)` },
+                { name: 'categorias', code: `categorias (
+    id_categoria PK,
+    nombre,
+    descripcion
+)` },
+                { name: 'clientes', code: `clientes (
+    cif_nif PK,
+    nombre,
+    calle,
+    numero,
+    ciudad,
+    codigo_postal
+)` },
+                { name: 'telefonos', code: `telefonos (
+    id_telefono PK,
+    numero_telefono,
+    cif_nif_cliente
+)
+
+donde
+{cif_nif_cliente} referencia clientes(cif_nif)` },
+                { name: 'facturas', code: `facturas (
+    numero_factura PK,
+    fecha,
+    descuento,
+    importe_final,
+    cif_nif_cliente
+)
+
+donde
+{cif_nif_cliente} referencia clientes(cif_nif)` },
+                { name: 'facturas_lineas', code: `facturas_lineas (
+    numero_factura + numero_linea PK,
+    id_producto,
+    precio_venta,
+    cantidad,
+    iva,
+    importe_total_producto
+)
+
+donde
+{numero_factura} referencia facturas(numero_factura)
+{id_producto} referencia productos(id_producto)` },
+            ],
+            modelNotes: [
+                'cif_nif se mantiene como clave primaria de clientes y proveedores, tal como exige el enunciado.',
+                'id_telefono se mantiene como clave primaria de teléfonos, por nuestra decisión de diseño.',
+                'numero_factura + numero_linea es la clave primaria compuesta de las líneas de factura.',
+                'Un mismo producto puede aparecer en distintas líneas de una factura cuando existen condiciones económicas diferentes.',
+                'precio_venta conserva el precio unitario sin IVA en el momento de la venta.',
+                'importe_total_producto conserva el subtotal de la línea sin IVA, tal como hemos decidido.',
+                'iva registra el porcentaje impositivo aplicado a cada línea.',
+                'descuento representa un porcentaje aplicado antes del IVA.',
+                'importe_final representa el total definitivo de la factura con descuento e IVA incluidos.',
+                'Cada producto pertenece a una única categoría y tiene un único proveedor.',
+            ],
+        });
+        Object.assign(exercises[2], {
+            status: 'Completado',
+            practicesTemplate: 'roads-design-template',
+            normalForms: [
+                'Todas las tablas cumplen la Primera Forma Normal porque sus atributos contienen valores atómicos y no presentan grupos repetitivos. Las provincias atravesadas por cada tramo se registran mediante filas independientes en trayectos, en lugar de almacenar varios valores en un mismo atributo.',
+                'Todas las tablas cumplen la Segunda Forma Normal porque cumplen la 1FN y no presentan dependencias parciales. En trayectos, cuya clave primaria es compuesta (id_tramo, id_paso), los atributos id_provincia, km_inicio y km_fin dependen de la clave completa.',
+                'El modelo se ha revisado para evitar dependencias transitivas. En extremos_carretera se elimina codigo_carretera, ya que puede obtenerse a través de id_tramo. Los datos de clasificación se organizan en tablas independientes. Se documentan las redundancias controladas y las restricciones necesarias para mantener la integridad de los datos.',
+            ],
+            conclusion: 'El modelo relacional del ejercicio 3 se ha revisado aplicando los criterios de 1FN, 2FN y 3FN. Se han corregido las dependencias detectadas, separado los datos de clasificación y documentado las decisiones de diseño. La longitud se calcula automáticamente y las provincias de inicio y fin se mantienen como redundancia controlada. El resultado es una propuesta de modelo normalizado, con las restricciones de integridad necesarias identificadas.',
+            practices: [
+                'Nombres de tablas en plural y minúsculas.',
+                'Nombres compuestos mediante snake_case.',
+                'Claves primarias y foráneas identificadas.',
+                'Nombres de atributos claros y descriptivos.',
+                'Referencias entre tablas expresadas de forma explícita.',
+                'Restricciones de unicidad e integridad documentadas.',
+            ],
+            tables: [
+                { name: 'tipos_via', code: `tipos_via (
+    id_tipo_via PK,
+    nombre,
+    descripcion
+)` },
+                { name: 'titularidades', code: `titularidades (
+    id_titularidad PK,
+    nombre UNIQUE
+)` },
+                { name: 'niveles', code: `niveles (
+    id_nivel PK,
+    numero UNIQUE,
+    color
+)` },
+                { name: 'carreteras', code: `carreteras (
+    codigo PK,
+    nombre,
+    prefijo,
+    senal,
+    observaciones,
+    acceso_controlado,
+    doble_calzada,
+    id_tipo_via FK,
+    id_titularidad FK,
+    id_nivel FK
+)
+
+donde:
+    id_tipo_via → tipos_via(id_tipo_via)
+    id_titularidad → titularidades(id_titularidad)
+    id_nivel → niveles(id_nivel)` },
+                { name: 'tipos_terreno', code: `tipos_terreno (
+    id_tipo_terreno PK,
+    nombre UNIQUE
+)` },
+                { name: 'entornos', code: `entornos (
+    id_entorno PK,
+    nombre UNIQUE
+)` },
+                { name: 'comunidades_autonomas', code: `comunidades_autonomas (
+    id_comunidad PK,
+    nombre UNIQUE
+)` },
+                { name: 'provincias', code: `provincias (
+    id_provincia PK,
+    nombre,
+    id_comunidad FK
+)
+
+donde:
+    id_comunidad → comunidades_autonomas(id_comunidad)` },
+                { name: 'tramos', code: `tramos (
+    id_tramo PK,
+    codigo_carretera FK,
+    km_inicial,
+    km_final,
+    longitud CALCULADA,
+    id_tipo_terreno FK,
+    id_entorno FK,
+    velocidad_limite,
+    num_carriles_por_sentido,
+    observaciones,
+    id_provincia_inicio FK,
+    id_provincia_fin FK
+)
+
+donde:
+    codigo_carretera → carreteras(codigo)
+    id_tipo_terreno → tipos_terreno(id_tipo_terreno)
+    id_entorno → entornos(id_entorno)
+    id_provincia_inicio → provincias(id_provincia)
+    id_provincia_fin → provincias(id_provincia)
+
+UNIQUE (codigo_carretera, id_tramo)` },
+                { name: 'trayectos', code: `trayectos (
+    id_tramo PK, FK,
+    id_paso PK,
+    id_provincia FK,
+    km_inicio,
+    km_fin
+)
+
+PK COMPUESTA (id_tramo, id_paso)
+
+donde:
+    id_tramo → tramos(id_tramo)
+    id_provincia → provincias(id_provincia)` },
+                { name: 'extremos_carretera', code: `extremos_carretera (
+    id_extremo PK,
+    posicion,
+    tipo_extremo,
+    km_extremo,
+    id_tramo FK,
+    id_provincia FK,
+    km_confluencia,
+    id_tramo_confluencia FK,
+    id_provincia_confluencia FK
+)
+
+donde:
+    id_tramo → tramos(id_tramo)
+    id_provincia → provincias(id_provincia)
+    id_tramo_confluencia → tramos(id_tramo)
+    id_provincia_confluencia → provincias(id_provincia)` },
+            ],
+        });
+        Object.assign(exercises[3], {
+            conclusionTitle: 'Conclusión provisional',
+            practicesTemplate: 'flights-design-template',
+            practicesTitle: 'Buenas prácticas aplicadas · Pendiente de revisión',
+            practices: [
+                'Nombres de tablas en plural y minúsculas.',
+                'Palabras compuestas separadas mediante guion bajo (snake_case).',
+                'Nombres de atributos claros y descriptivos.',
+                'Nombres coherentes para los atributos que relacionan tablas (num_vuelo, cod_aeropuerto, modelo).',
+                'Separación de aeropuertos, programas, vuelos realizados, modelos de avión y escalas en tablas independientes.',
+                'Tablas intermedias para las relaciones N:M (programas_dias y aeropuertos_modelos).',
+            ],
+            normalForms: [
+                'Estructura compatible con la Primera Forma Normal: los atributos contienen valores atómicos y no presentan grupos repetitivos. Los días de operación de cada programa se registran mediante filas independientes en programas_dias. Pendiente de revisión.',
+                'Estructura compatible con la Segunda Forma Normal: los datos de cada vuelo realizado y de cada escala se almacenan en tablas propias (vuelos_realizados, escalas y vuelos_escalas), de modo que sus atributos dependen de la clave completa. Pendiente de revisión.',
+                'Estructura compatible con la Tercera Forma Normal: los datos de aeropuertos, programas, vuelos realizados, modelos de avión y escalas se han separado para reducir redundancias y evitar dependencias transitivas. Pendiente de revisión.',
+            ],
+            conclusion: 'El modelo relacional del sistema de vuelos presenta una estructura compatible con la 1FN, 2FN y 3FN. Se han separado los datos de aeropuertos, programas, vuelos realizados, modelos de avión y escalas para reducir redundancias y mantener la integridad de la información. La revisión definitiva y las justificaciones de las decisiones de diseño se completarán cuando se disponga de la solución de referencia del formador.',
+            tables: [
+                { name: 'aeropuertos', code: `aeropuertos (
+    cod_aeropuerto,
+    nombre,
+    ciudad,
+    pais
+)` },
+                { name: 'programas_vuelo', code: `programas_vuelo (
+    num_vuelo,
+    hora_salida_prevista,
+    duracion_estimada,
+    linea_aerea,
+    cod_aeropuerto_origen,
+    cod_aeropuerto_destino
+)` },
+                { name: 'dias_semana', code: `dias_semana (
+    nombre_dia,
+    orden
+)` },
+                { name: 'programas_dias', code: `programas_dias (
+    num_vuelo,
+    nombre_dia
+)` },
+                { name: 'modelos_avion', code: `modelos_avion (
+    modelo,
+    capacidad
+)` },
+                { name: 'aeropuertos_modelos', code: `aeropuertos_modelos (
+    cod_aeropuerto,
+    modelo
+)` },
+                { name: 'vuelos_realizados', code: `vuelos_realizados (
+    num_vuelo,
+    fecha,
+    plazas_vacias,
+    modelo
+)` },
+                { name: 'escalas', code: `escalas (
+    num_vuelo,
+    num_orden,
+    tipo_escala,
+    cod_aeropuerto
+)` },
+                { name: 'vuelos_escalas', code: `vuelos_escalas (
+    num_vuelo,
+    fecha,
+    num_orden,
+    pasajeros_suben,
+    pasajeros_bajan
+)` },
+            ],
+        });
+        const exerciseList = document.getElementById('exercise-list');
+        const exerciseTemplate = document.getElementById('exercise-template');
+        const detailTitle = document.getElementById('detail-title');
+        const detailStatus = document.getElementById('detail-status');
+        const announcement = document.getElementById('exercise-announcement');
+        const practicesList = document.getElementById('exercise-practices');
+        const relationalModel = document.getElementById('relational-model');
+        const modelTemplate = document.getElementById('model-template');
+        document.getElementById('exercise-progress').textContent =
+            `${exercises.filter((exercise) => exercise.status === 'Completado').length} de ${exercises.length} completados`;
+
+        function updateStatusDot(dot, status) {
+            dot.classList.toggle('bg-amber-400', status !== 'Completado');
+            dot.classList.toggle('bg-teal-500', status === 'Completado');
+        }
+
+        function selectExercise(number) {
+            const exercise = exercises.find((item) => item.number === number);
+            exerciseList.querySelectorAll('button').forEach((button) => {
+                button.setAttribute('aria-pressed', String(Number(button.dataset.exercise) === number));
+            });
+            detailTitle.textContent = `Ejercicio ${number}${exercise.title ? ` — ${exercise.title}` : ' · Espacio de trabajo'}`;
+            detailStatus.textContent = exercise.status;
+            updateStatusDot(document.getElementById('detail-status-dot'), exercise.status);
+            document.querySelectorAll('[data-normal-form]').forEach((text, index) => {
+                text.textContent = exercise.normalForms?.[index] ?? 'pendiente de revisión.';
+            });
+            document.getElementById('normalization-conclusion').hidden = !exercise.conclusion;
+            document.getElementById('conclusion-title').textContent = exercise.conclusionTitle ?? 'Conclusión';
+            document.getElementById('conclusion-text').textContent = exercise.conclusion ?? '';
+            document.getElementById('practices-title').textContent = exercise.practicesTitle ?? 'Buenas prácticas aplicadas';
+            document.getElementById('practices-pending').hidden = Boolean(exercise.practices || exercise.practicesTemplate);
+            practicesList.hidden = !exercise.practices;
+            practicesList.replaceChildren();
+            for (const practice of exercise.practices ?? []) {
+                const item = document.createElement('li');
+                item.className = 'border-l-2 border-teal-300 pl-3';
+                item.textContent = practice;
+                practicesList.appendChild(item);
+            }
+            const designDetails = document.getElementById('exercise-design');
+            const designDisclosure = document.getElementById('design-disclosure');
+            designDisclosure.open = false;
+            designDisclosure.hidden = !exercise.practicesTemplate;
+            designDetails.replaceChildren();
+            if (exercise.practicesTemplate) {
+                const template = document.getElementById(exercise.practicesTemplate);
+                designDetails.appendChild(template.content.cloneNode(true));
+            }
+            const modelPending = exercise.status === 'Pendiente de revisión';
+            document.getElementById('model-title').textContent = modelPending
+                ? 'Modelo relacional · Pendiente de revisión'
+                : 'Modelo relacional corregido';
+            document.getElementById('model-reference').textContent = modelPending
+                ? 'modelo relacional propio, pendiente de revisión,'
+                : 'modelo relacional corregido';
+            document.getElementById('model-description').textContent = !exercise.tables
+                ? 'Se incorporará si hay cambios.'
+                : modelPending
+                    ? `${exercise.tables.length} tablas del modelo relacional propio. Pendiente de revisión: las claves, las referencias y las justificaciones se incorporarán tras la corrección.`
+                    : `${exercise.tables.length} tablas con la nomenclatura y las referencias del modelo revisado. PK indica la clave primaria; + identifica los atributos de una clave compuesta. Las claves foráneas (FK) se indican mediante las referencias.`;
+            document.getElementById('model-disclosure').open = false;
+            relationalModel.replaceChildren();
+            for (const [index, table] of (exercise.tables ?? []).entries()) {
+                const block = modelTemplate.content.cloneNode(true);
+                block.querySelector('[data-table-title]').textContent = `${index + 1}. ${table.name}`;
+                block.querySelector('code').textContent = table.code;
+                block.querySelector('pre').setAttribute('aria-label', `Modelo relacional de ${table.name}`);
+                relationalModel.appendChild(block);
+            }
+            document.getElementById('model-notes').hidden = !exercise.modelNotes;
+            const modelNotesList = document.getElementById('model-notes-list');
+            modelNotesList.replaceChildren();
+            for (const note of exercise.modelNotes ?? []) {
+                const item = document.createElement('li');
+                item.textContent = note;
+                modelNotesList.appendChild(item);
+            }
+            announcement.textContent = `Ejercicio ${number} seleccionado. ${exercise.status}.`;
+        }
+
+        for (const exercise of exercises) {
+            const { number, title, status } = exercise;
+            const card = exerciseTemplate.content.cloneNode(true);
+            const button = card.querySelector('button');
+            button.dataset.exercise = number;
+            button.setAttribute('aria-label', `Ver ejercicio ${number}${title ? `, ${title}` : ''}, ${status.toLowerCase()}`);
+            card.querySelector('[data-number]').textContent = String(number).padStart(2, '0');
+            card.querySelector('[data-title]').textContent = `Ejercicio ${number}${title ? ` — ${title}` : ''}`;
+            card.querySelector('[data-status]').textContent = status;
+            updateStatusDot(card.querySelector('[data-status-dot]'), status);
+            button.addEventListener('click', () => selectExercise(number));
+            exerciseList.appendChild(card);
+        }
+
+        selectExercise(1);
+
+        const exercisesSection = document.getElementById('ejercicios');
+        const exerciseLinks = document.querySelectorAll('a[href="#ejercicios"]');
+
+        function showExercises() {
+            exercisesSection.hidden = false;
+            exerciseLinks.forEach((link) => link.setAttribute('aria-expanded', 'true'));
+        }
+
+        exerciseLinks.forEach((link) => {
+            link.addEventListener('click', () => {
+                showExercises();
+                exercisesSection.focus({ preventScroll: true });
+            });
+        });
+
+        function revealExercisesFromHash() {
+            if (location.hash === '#ejercicios') {
+                showExercises();
+                exercisesSection.scrollIntoView();
+            }
+        }
+
+        window.addEventListener('hashchange', revealExercisesFromHash);
+        revealExercisesFromHash();
+    </script>
+</body>
+</html>
