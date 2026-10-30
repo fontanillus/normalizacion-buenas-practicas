@@ -442,9 +442,67 @@
         </section>
     </template>
     <template id="flights-design-template">
-        <section class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
-            <h5 class="font-semibold text-slate-800">Pendiente de revisión</h5>
-            <p class="mt-3 text-slate-500">Las justificaciones de las decisiones de diseño se incorporarán cuando se verifique el modelo con la solución de referencia del formador.</p>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">1. Criterio general de diseño</h5>
+            <p class="mt-3">El modelo se ha desarrollado a partir de los requisitos del enunciado del ejercicio 4, «Sistema de vuelos».</p>
+            <p class="mt-3">Se conserva el diagrama E/R inicial para mostrar la evolución del diseño hacia el modelo relacional. Las decisiones y los ajustes realizados durante esta transformación se explican en esta documentación.</p>
+            <p class="mt-3">La propuesta no pretende reproducir exactamente el modelo de referencia, sino presentar una interpretación propia, coherente y justificable de los requisitos.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">2. Aeropuertos, ciudades y países</h5>
+            <p class="mt-3">Se mantienen <code>ciudad</code> y <code>pais</code> como atributos de <code>aeropuertos</code>, tal como aparecen descritos en el enunciado.</p>
+            <p class="mt-3">La solución de referencia utiliza entidades independientes para ciudades y países, lo que permite gestionar estos datos de forma más normalizada. Ambos enfoques responden a decisiones distintas; en esta propuesta se prioriza representar directamente la información solicitada sin incorporar entidades geográficas adicionales.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">3. Programas de vuelo</h5>
+            <p class="mt-3">Se utiliza <code>num_vuelo</code> como clave primaria de <code>programas_vuelo</code>, porque el enunciado establece que los números de vuelo son únicos a nivel mundial.</p>
+            <p class="mt-3">Se incorporan también <code>hora_salida_prevista</code> y <code>duracion_estimada</code>, atributos no exigidos expresamente, pero considerados útiles para planificar los vuelos.</p>
+            <p class="mt-3">Cada programa tiene un aeropuerto de origen y otro de destino, representados mediante claves foráneas.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">4. Días de operación</h5>
+            <p class="mt-3">Se crean <code>dias_semana</code> como tabla de referencia y <code>programas_dias</code> como tabla intermedia que resuelve la relación N:M entre programas y días de operación.</p>
+            <p class="mt-3">Esta separación evita almacenar varios días en un mismo campo y facilita las consultas y modificaciones.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">5. Modelos de avión</h5>
+            <p class="mt-3">Se mantienen <code>modelos_avion</code> y <code>aeropuertos_modelos</code>. La tabla intermedia representa la relación N:M entre aeropuertos y modelos admitidos.</p>
+            <p class="mt-3">La capacidad se almacena en <code>modelos_avion</code>, porque depende del modelo y no del aeropuerto.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">6. Vuelos realizados</h5>
+            <p class="mt-3">Se utiliza la clave primaria compuesta (<code>num_vuelo</code>, <code>fecha</code>) para identificar cada vuelo realizado. La decisión se basa en el supuesto de que un mismo programa de vuelo se ejecuta como máximo una vez al día.</p>
+            <p class="mt-3">La solución de referencia utiliza un identificador independiente. Ambas alternativas permiten identificar los vuelos, pero responden a criterios distintos. La clave compuesta elegida es válida mientras se mantenga el supuesto indicado.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">7. Escalas previstas y realizadas</h5>
+            <p class="mt-3"><code>escalas</code> almacena las escalas previstas para cada programa, identificadas mediante (<code>num_vuelo</code>, <code>num_orden</code>). <code>vuelos_escalas</code> relaciona cada vuelo realizado con sus escalas previstas y permite registrar los pasajeros que suben y bajan.</p>
+            <p class="mt-3">Esta separación distingue la planificación del programa de su ejecución. La identificación de <code>escalas</code> mediante una clave compuesta ajusta el diagrama E/R inicial, que se conserva expresamente para mostrar la evolución del diseño.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">8. Escalas técnicas y comerciales</h5>
+            <p class="mt-3">El enunciado original contempla escalas técnicas, en las que no hay movimiento de pasajeros. La pregunta final plantea también la posibilidad de que los pasajeros suban o bajen durante una escala.</p>
+            <p class="mt-3">Para representar ambos supuestos se incorpora <code>tipo_escala</code>: en las escalas técnicas, <code>pasajeros_suben</code> y <code>pasajeros_bajan</code> deben ser cero; las comerciales permiten registrar movimientos de pasajeros.</p>
+            <p class="mt-3">Esta ampliación evita crear un modelo completamente distinto para el segundo supuesto. La restricción deberá comprobarse al implementar la base de datos.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+            <h5 class="font-semibold text-slate-800">9. Restricciones y supuestos adicionales</h5>
+            <p class="mt-3">El diseño establece las siguientes condiciones:</p>
+            <ul class="mt-3 list-disc space-y-2 pl-5 marker:text-teal-500">
+                <li>Los aeropuertos de origen y destino de un programa deben ser distintos.</li>
+                <li>Cada programa debe operar al menos un día de la semana.</li>
+                <li>La capacidad de los modelos y el número de orden de las escalas deben ser positivos.</li>
+                <li>Las plazas vacías no pueden superar la capacidad del modelo utilizado.</li>
+                <li>El modelo de avión debe estar admitido en los aeropuertos donde opera.</li>
+                <li>Todos los vuelos de un programa realizan las escalas previstas, según el supuesto adoptado.</li>
+                <li>Todos los aeropuertos contemplados deben registrar actividad de salida y de llegada.</li>
+            </ul>
+            <p class="mt-3 border-l-2 border-teal-300 pl-3">Algunas condiciones no pueden garantizarse únicamente mediante claves primarias y foráneas, por lo que requerirán validaciones adicionales durante la implementación.</p>
+        </section>
+        <section class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-5">
+            <h5 class="font-semibold text-indigo-950">10. Conclusión</h5>
+            <p class="mt-3">El diseño propuesto mantiene nueve tablas y combina los requisitos del enunciado con decisiones propias del analista.</p>
+            <p class="mt-3">Las diferencias respecto a la solución de referencia son deliberadas y quedan documentadas para facilitar su evaluación. El objetivo es obtener un modelo relacional coherente, comprensible y adaptable, respetando los supuestos y las restricciones establecidos.</p>
         </section>
     </template>
     <script>
@@ -762,9 +820,12 @@ donde:
             ],
         });
         Object.assign(exercises[3], {
-            conclusionTitle: 'Conclusión provisional',
+            status: 'Completado',
+            modelTitle: 'Modelo relacional revisado',
+            modelReference: 'modelo relacional revisado',
+            conclusionTitle: 'Conclusión',
             practicesTemplate: 'flights-design-template',
-            practicesTitle: 'Buenas prácticas aplicadas · Pendiente de revisión',
+            practicesTitle: 'Buenas prácticas aplicadas',
             practices: [
                 'Nombres de tablas en plural y minúsculas.',
                 'Palabras compuestas separadas mediante guion bajo (snake_case).',
@@ -774,11 +835,11 @@ donde:
                 'Tablas intermedias para las relaciones N:M (programas_dias y aeropuertos_modelos).',
             ],
             normalForms: [
-                'Estructura compatible con la Primera Forma Normal: los atributos contienen valores atómicos y no presentan grupos repetitivos. Los días de operación de cada programa se registran mediante filas independientes en programas_dias. Pendiente de revisión.',
-                'Estructura compatible con la Segunda Forma Normal: los datos de cada vuelo realizado y de cada escala se almacenan en tablas propias (vuelos_realizados, escalas y vuelos_escalas), de modo que sus atributos dependen de la clave completa. Pendiente de revisión.',
-                'Estructura compatible con la Tercera Forma Normal: los datos de aeropuertos, programas, vuelos realizados, modelos de avión y escalas se han separado para reducir redundancias y evitar dependencias transitivas. Pendiente de revisión.',
+                'Los atributos contienen valores atómicos y no presentan grupos repetitivos. Los días de operación de cada programa se registran mediante filas independientes en programas_dias.',
+                'Los datos de cada vuelo realizado y de cada escala se almacenan en tablas propias (vuelos_realizados, escalas y vuelos_escalas), de modo que sus atributos dependen de la clave completa.',
+                'Los datos de aeropuertos, programas, vuelos realizados, modelos de avión y escalas se han separado para reducir redundancias y evitar dependencias transitivas.',
             ],
-            conclusion: 'El modelo relacional del sistema de vuelos presenta una estructura compatible con la 1FN, 2FN y 3FN. Se han separado los datos de aeropuertos, programas, vuelos realizados, modelos de avión y escalas para reducir redundancias y mantener la integridad de la información. La revisión definitiva y las justificaciones de las decisiones de diseño se completarán cuando se disponga de la solución de referencia del formador.',
+            conclusion: 'El modelo relacional del sistema de vuelos presenta una estructura compatible con la 1FN, 2FN y 3FN. Se han separado los datos de aeropuertos, programas, vuelos realizados, modelos de avión y escalas para reducir redundancias y mantener la integridad de la información. Las diferencias respecto a la solución de referencia responden a decisiones de diseño propias, justificadas en el apartado correspondiente.',
             tables: [
                 { name: 'aeropuertos', code: `aeropuertos (
     cod_aeropuerto,
@@ -883,10 +944,10 @@ donde:
             const modelPending = exercise.status === 'Pendiente de revisión';
             document.getElementById('model-title').textContent = modelPending
                 ? 'Modelo relacional · Pendiente de revisión'
-                : 'Modelo relacional corregido';
+                : exercise.modelTitle ?? 'Modelo relacional corregido';
             document.getElementById('model-reference').textContent = modelPending
                 ? 'modelo relacional propio, pendiente de revisión,'
-                : 'modelo relacional corregido';
+                : exercise.modelReference ?? 'modelo relacional corregido';
             document.getElementById('model-description').textContent = !exercise.tables
                 ? 'Se incorporará si hay cambios.'
                 : modelPending
